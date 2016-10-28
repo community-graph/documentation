@@ -1,0 +1,238 @@
+= Neo4j Community Graph
+== Goals
+
+1. Run a mid-sized, live production system of Neo4j to gather experience and provide feedback to PM and engineering.
+2. Gather activities of the Neo4j community from all channels to get an overview on activities, people, content, influencers, topics etc.
+3. Use both to create content, presentations and documentation.
+
+== Architecture
+
+Microservice architecture with a Neo4j cluster as a backing datastore. (Perhaps using an event-store but not sure).
+Each microservice handles one data source, or one reporting or visualization task.
+
+They can be written in different languages showcasing our different drivers and use different infrastructure (docker-swarm, aws lambda, azure, ...)[a][b]
+The Neo4j cluster will be a 3.1 core edge cluster, to gather experience with running that in production.
+DataSources
+
+* Twitter (Streaming)
+* Google Group(s)
+* StackOverflow
+* public Slack
+* Blog Posts
+* Google Alerts
+* Package Registries (npm, maven, php, python, nuget)
+* Quora
+* Google+
+* FB
+* Webinar
+* Meetup
+* Conference
+* Presentation
+* Hacker News posts / comments
+* LinkedIn
+* YouTube / vimeo
+* Learning platforms (udemy, Lynda, ...)
+* Books
+* ...[c][d]
+
+== DataModel
+
+=== Core Entities
+* Event (any timestamped activity)
+* Account
+* Person (natural person)
+* Tag (name) - e.g. spring-data-neo4j, javascript, graphconnect
+* Publication (title, rating, link) - e.g. GH-Repository, SO-Question, Blog Post, Google Group E-Mail, ...
+
+
+== Individual Data Model
+
+Each Data Source has it's additional datamodel, e.g.
+* Twitter with retweets, mentions, replies
+* StackOverflow with Question, Answer, Comment
+* GitHub with Organization, Repositry, Fork, Commit, PR, Issue, Comment etc.
+
+== Resources
+
+=== APIs
+* Twitter (Streaming)
+* Google Group(s)
+* StackOverflow
+* public Slack
+* Blog Posts
+* Google Alerts
+* Package Registries (npm, maven, php, python, nuget)
+* Quora
+* Google+
+* FB
+* Webinar
+* Meetup
+* Conference
+* Presentations
+* LinkedIn
+* Hacker News posts / comments
+
+== Previous work
+
+
+Implementation: https://github.com/neo-technology/timecube
+Documentation: 
+
+
+Reporting: https://docs.google.com/spreadsheets/d/1BnaZagJhjauphTfZN4jaWfHGegMZwjjCoT3n6_EA7GY/edit#gid=0
+Form to collect users: https://docs.google.com/a/neotechnology.com/forms/d/1Va3xK9rBDwuUlcCw8SFJza77mNjWLybWRQrpoWbW9us/edit
+
+
+== Old Blog Post (unpublished): The Neo4j "Community Graph"
+
+=== Community Activity
+If you are part of the Neo4j community, you know how alive and vibrant it is. Frequently mailing list messages, meetup events, blog posts, presentations, github projects, StackOverflow questions are created or updated.
+And of course lots of Tweets that highlight where the action is.
+We're happy that many of you are active on all of these channels. To the Neo4j team it poses the challenge of keeping up with who does what and where. Also we want to enable every member of the community to access the community activity data and make use of it. That's why we created the "Community Graph". We built it from the ground up taking one step at a time.
+Import process
+
+The import process is explained in more detail in this documentation. For the community graph we've created a GMail account "neo4j-firehose" which collects many events via email (e.g. twitter, mailing-list, stackoverflow, ...). We then import those emails with a two-step process into the graph, first adding the raw messages as events and then categorizing the events according to the domain model below.
+
+=== Domain Model
+
+The current domain model connects the events to different types of users and other elements. URIs and tags are handled separately as connecting elements. We think that the current model is a start but look forward to your feedback on how to improve it with regard to different use-cases.
+
+img::img/community_graph.png[]
+  
+
+
+
+This is the data we've captured so far:
+
+----
+start n=node(0) 
+match n-[:CATEGORY]->c-->x-[:POSTED|CONTRIBUTED|LINKED|TAGGED|SO_QUESTION]->e 
+return c.type, count(distinct x) as users, count(*) as events;
+==> +----------------------------------+
+==> | c.type          | users | events |
+==> +----------------------------------+
+==> | "RSS"           | 1     | 36     |
+==> | "GITHUB"        | 384   | 8127   |
+==> | "TWITTER"       | 4395  | 17724  |
+==> | "STACKOVERFLOW" | 485   | 615    |
+==> | "MAILINGLIST"   | 952   | 12811  |
+==> | "URI"           | 629   | 6560   |
+==> | "TAG"           | 1460  | 27640  |
+==> +----------------------------------+
+==> 7 rows
+----
+
+=== Access & "API"
+
+Having the data in the graph is nice but doesn't leverage its power. The website hosted at the community-graph offers a simple interface for your Cypher queries whose results are rendered using jQuery data-tables. That's the easiest way of getting in touch with the collected information.
+Public HTTP endpoints for querying the graph with Cypher enable integration in other apps or services and command-line use. If you request an auth-token from us you can also execute queries that update and extend the graph, please handle those with care.
+The auth-token is also needed for using the endpoints that add events (using JSON POST data) or trigger import or categorization, again, see the docs.
+Cypher Endpoints
+
+----
+curl -XPOST -d'{"query": 
+               "start user=node:GITHUB_USER({lookup}) 
+                match user-[:GITHUB_PROJECT]->project 
+                return user.name, collect(project.name) as projects limit 5", 
+               "params" :{"lookup": "name:*neo*"}}' \
+ http://community-graph.neo4j.org/db/data/cypher
+
+// results in:
+
+{"columns":["user.name","projects"],
+"data":[["neo4j",        ["cloud","neo4js",....,"spatial","community"]],
+        ["neo4j-contrib",["relate-at-graphconnect"]],
+        ["neo4j-examples",["heroku-neo4j-appscript-demo"]]]}
+----
+
+=== Now it's up to you!
+
+Most of all we're interested in your ideas of what do create using the community graph data. Be it stats, visualizations or fun mashups. So feel free to send us your ideas, use the query endpoints to extract interesting data and share it. We would be very happy about forks of the repository and pull-requests for new categorizers or new email input streams to the firehose (please ask first). If you want to use the a site's API to fetch events and add those to the community graph please ask us for an Auth-Token.
+We have some ideas of what would be cool to do with the data. For example statistics about the most interesting content posted and perhaps hidden gems that didn't get the appropriate attention. Some exploratory navigation like the Neovigator from Max De Marzi could be interesting too. Talking with Axel from the structr team we developed an idea of creating a "Flipboard"-like community magazine that is rendered by querying the community graph for interesting, recent content.
+
+
+
+
+=== Documentation
+
+
+=== Community Firehose
+
+We thought it would be nice to collect everything that happens in a big message stream and eventually store it in a "Community Graph". This lead to the creation a google mail account called "neo4j-firehose" which collects events via different notification mechanisms (either direct email or feed to email gateways).
+Importing Events
+
+To import that event stream into a Neo4j graph we wrote a small Java application that runs on Heroku. It connects to the GMail account via IMAP and runs a two step import process. First the not-yet imported messages are imported into the graph as events each of which contains attributes like:
+
+   * id (email-message id like <4f852d41.4c88980a.549e.1446@mx.google.com>)
+   * from, to (email address or twitter-id etc.)
+   * date (long time)
+   * title
+   * content (plain text)
+   * tags (e.g. from twitter,so, rss)
+   * category (e.g. STACKOVERFLOW if inserted directly via event API)
+   * source (link)
+   * optionally some original E-Mail headers like: List-Id, List-Archive, X-RSS-URL, X-RSS-TAGS, X-RSS-Feed
+
+The events are added to a time-tree (multilevel indexing structure) so that it is easy to access events per time interval. Event indexes exists for "events", "uncategorized" and "unknown" (no categories found), keyed on "id" which is
+
+=== Categorization
+
+In a second step we try to categorize the imported events using several categorizes with different rules. The main categories are Tweets, Mailinglist-Message, SO-Questions, URLs, Github activities.
+Categorizers try to extract the users that created the events and link them to the event. Other things that are extracted and linked are:
+
+   * Tags
+   * Collaborators (Mentions)
+   * Github projects
+   * URI's
+
+Where URI's are concerned, we resolve shortened URLs and try to identify base URLs (e.g. the blog URL for a single blog post) and link those in a chain so that e.g. all blog posts of a blog are reachable from its root URL.
+For each of the important "entities" in the graph there is an index.
+
+   * for events: events, uncategorized, unknown for events with "id"-keys
+   * for entities: SO_QUESTION, GITHUB_PROJECT, RSS_FEED with "name"-keys
+   * for users: GITHUB_USER, TWITTER_USER, LIST_USER, SO_USER with "name"-keys
+   * TAG with "name"-key
+   * URI, BASE_URI with "name"-keys
+
+Category names: URI, MAILINGLIST, TGRAPH, GITHUB, STACKOVERFLOW, TWITTER, PEEPS, RSS, TAG
+
+=== Event Endpoints
+
+The event endpoints can be used to add events to the community graph manually, equipped with an auth-token you can post them as JSON map. This can be used to use APIs for sites like GitHub, StackOverflow or meetup.com and create events with clean data structures than just emails.
+
+----
+curl -XPOST -d'{"id":"<4f852d41.4c88980a.549e.1446@mx.google.com>", 
+               "from": "joe@doe.com", "to":"foo@bar.com", "title":"an title", 
+               "content" : "some content", "category":"MAILINGLIST"}' \
+    -H X-Token:38947oiau98s http://community-graph.neo4j.org/api/events
+----
+
+For categorizing single events or a number of uncategorized events.
+
+----
+curl -XPOST http://community-graph.neo4j.org/api/categorize?id=<event-id>&count=1000
+----
+
+For triggering importing events from the firehose GMail-account
+
+----
+curl -XPOST http://community-graph.neo4j.org/api/import[?import_messags=1000& skip_to_nr=30&skip_to_message=><event-id>&categorize=true]
+----
+
+There is also a more advanced cypher based categorization endpoint which can categorize events with ad-hoc queries.
+
+////
+=== The T-Graph
+
+The community team runs the T-Graph campaign where people (starting with the founders) received customized Neo4j T-Shirts and can issuing new ones to more people. Peter wrote a categorizer to add those T-Shirt connections to the Community Graph too.
+Service users and people
+
+In every service we have and use different identities. For identifying active contributors it is nice to merge the different identities to personaes (called peeps).
+Of course this poses security concerns, so we would like to add it as an opt-in mechanism, if you'd like to have your identities connected in the Neo4j community graph, please fill out this form and add as many identities as you'd like.
+
+
+[a]What should we start with? Something familiar to us that we've already used (like docker) or new platform that we want to integrate / provide demo (like lambda)?
+[b]Great question. I think I would want to start with 1-2 familiar things to set up the infrastructure. But then go for the new stuff.
+[c]How should we prioritize these? I think we should prioritize based on those that we don't have good insight into (like package registries), those that offer new/different architectural approaches instead of easy targets where we recycle code (like prioritize Slack over Twitter since we already have lots of Twitter integration material but not much Slack)
+[d]Same here, start with 1-2 familar things for getting started, also because I still want to get all that information about community activity in and related. But then I think the repositories, slack (b/c we lose messages), Google Alerts (e.g. for blogs) and GH are very worthwile
+////
