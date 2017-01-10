@@ -2,9 +2,14 @@
 
 Data Model &amp; Documentation
 
+## Steps
+
+1. Central Neo4j Instance readonly at: bolt://all:readonly@138.197.15.1:7687, (Write-User in 1Password)
+2. Develop datamodel
+
 ## Work Split
 
-### Will 
+### Will ddd
 
 * slack -> javascript
 * twitter -> elixir
@@ -29,7 +34,9 @@ Data Model &amp; Documentation
 
 ## Data Model
 
-* See arrows
+* [Arrows Markup](https://raw.githubusercontent.com/community-graph/documentation/master/arrows-datamodel.html)
+
+!(community_graph.png)[]
 
 * Always tag nodes with the channel too
 * rel-types past tense
@@ -40,7 +47,7 @@ Data Model &amp; Documentation
 
 ## Queries
 
-* dashboard (followship, activity)
+* dashboard (followship, activityddd
 * content discovery (projects, blogs) 
 * people activity (over time, when are they falling off)
 * channel activity
