@@ -1,4 +1,4 @@
-# documentation
+# Documentation
 
 Data Model &amp; Documentation
 
@@ -6,10 +6,13 @@ Data Model &amp; Documentation
 
 1. Central Neo4j Instance readonly at: bolt://all:readonly@138.197.15.1:7687, (Write-User in 1Password)
 2. Develop datamodel
+3. Simple Importers using Jupyter Notebooks
+4. Importer Microservices as outlined below in different languages and deployment
+5. Frontend Microservices for reporting / statistics / visualization / insight
 
 ## Work Split
 
-### Will ddd
+### Will
 
 * slack -> javascript
 * twitter -> elixir
@@ -36,7 +39,7 @@ Data Model &amp; Documentation
 
 * [Arrows Markup](https://raw.githubusercontent.com/community-graph/documentation/master/arrows-datamodel.html)
 
-!(community_graph.png)[]
+![](community_graph.png)
 
 * Always tag nodes with the channel too
 * rel-types past tense
@@ -45,9 +48,17 @@ Data Model &amp; Documentation
 * (:Container)-[:CONTAINED]->(:Content)
 * (:Content)-[:TAGGED]->(:Tag)-[:IS_A]->(:Concept)
 
+* Minimally these properties
+* (:Content {id,title, text, url, created, updated})
+* (:Container {id, name, url})
+* (:Tag {name})
+* (:User {id, handle, name})
+* (:Person {id, name})
+* (:Concept {name})
+
 ## Queries
 
-* dashboard (followship, activityddd
+* dashboard (followship, activity)
 * content discovery (projects, blogs) 
 * people activity (over time, when are they falling off)
 * channel activity
